@@ -1,12 +1,10 @@
 
-![Alt text](/Host_a_Static_Website_on_AWS.png)
+# Host a WordPress Website on AWS
 
-# Host a Static Website on AWS
-
-This project demonstrates how to host a static HTML web application on AWS using a comprehensive DevOps architecture. The deployment leverages various AWS services to ensure scalability, fault tolerance, and secure access.
+This project demonstrates how to host a WordPress website on AWS using a comprehensive DevOps architecture. The deployment leverages various AWS services to ensure scalability, fault tolerance, and secure access.
 
 ## Project Overview
-The static website is hosted on EC2 instances within a secure and scalable AWS infrastructure. The architecture includes public and private subnets, load balancing, auto scaling, and secure communication protocols.
+The wordpress website is hosted on EC2 instances within a secure and scalable AWS infrastructure. The architecture includes public and private subnets, load balancing, auto scaling, and secure communication protocols.
 
 ## Architecture Summary
 - **VPC Configuration**: Created a Virtual Private Cloud with public and private subnets across two Availability Zones.
@@ -15,6 +13,7 @@ The static website is hosted on EC2 instances within a secure and scalable AWS i
 - **Availability Zones**: Used two zones for high availability.
 - **Public Subnets**: Hosted NAT Gateway and Application Load Balancer.
 - **EC2 Instance Connect Endpoint**: Provided secure access to instances.
+- **EFS and RDS**: Provided distributed storage to the EC2 instances for hosting application code.
 - **Private Subnets**: Hosted EC2 web servers for enhanced security.
 - **NAT Gateway**: Allowed private instances to access the Internet.
 - **Application Load Balancer**: Distributed traffic to EC2 instances.
@@ -30,36 +29,33 @@ The static website is hosted on EC2 instances within a secure and scalable AWS i
 
 ```bash
 #!/bin/bash
-
-# Switch to the root user to gain full administrative privileges
 sudo su
-
-# Update all installed packages to their latest versions
-yum update -y
-
-# Install Apache HTTP Server
-yum install -y httpd
-
-# Change the current working directory to the Apache web root
-cd /var/www/html
-
-# Install Git
-yum install git -y
-
-# Clone the project GitHub repository to the current directory
-git clone https://github.com/Dolphincare79/host-a-static-website-on-aws.git
-
-# Copy all files, including hidden ones, from the cloned repository to the Apache web root
-cp -R host-a-static-website-on-aws/. /var/www/html/
-
-# Remove the cloned repository directory to clean up unnecessary files
-rm -rf host-a-static-website-on-aws
-
-# Enable the Apache HTTP Server to start automatically at system boot
-systemctl enable httpd 
-
-# Start the Apache HTTP Server to serve web content
-systemctl start httpd
+sudo yum update -y
+sudo mkdir -p /var/www/html
+EFS_DNS_NAME=fs-01f12df7d7a0dacd3.efs.us-east-1.amazonaws.com
+sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport "$EFS_DNS_NAME":/ /var/www/html
+sudo yum install -y httpd
+sudo systemctl enable httpd
+sudo systemctl start httpd
+sudo dnf install -y php php-cli php-cgi php-curl php-mbstring php-gd php-mysqlnd php-gettext php-json php-xml php-fpm php-intl php-zip php-bcmath php-ctype php-fileinfo php-openssl php-pdo php-tokenizer
+sudo wget https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
+sudo dnf install -y mysql80-community-release-el9-1.noarch.rpm
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+sudo dnf repolist enabled | grep "mysql.*-community.*"
+sudo dnf install -y mysql-community-server
+sudo systemctl start mysqld
+sudo systemctl enable mysqld
+sudo usermod -a -G apache ec2-user
+sudo chown -R ec2-user:apache /var/www
+sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} \;
+sudo find /var/www -type f -exec sudo chmod 0664 {} \;
+chown apache:apache -R /var/www/html
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+sudo cp -r wordpress/* /var/www/html/
+sudo cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+sudo vi /var/www/html/wp-config.php
+sudo service httpd restart
 ```
 
 3. Configure the Application Load Balancer and target group.
@@ -77,6 +73,8 @@ systemctl start httpd
 - Security Groups
 - Application Load Balancer
 - Auto Scaling Group
+- EFS
+- RDS
 - EC2 Instance Connect Endpoint
 - GitHub
 - Apache HTTP Server
