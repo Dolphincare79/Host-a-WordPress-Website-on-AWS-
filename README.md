@@ -26,6 +26,7 @@ The wordpress website is hosted on EC2 instances within a secure and scalable AW
 1. Launch EC2 instances in private subnets.
 2. Use the following user data script to install and configure the web server:
 
+#!/bin/bash
 # create to root user
 sudo su
 
@@ -101,6 +102,7 @@ sudo vi /var/www/html/wp-config.php
 
 # restart the webserver
 sudo service httpd restart
+
 ```
 
 3. Configure the Application Load Balancer and target group.
